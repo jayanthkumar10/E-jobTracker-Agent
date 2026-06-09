@@ -24,6 +24,10 @@ def init_db():
     with engine.connect() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         conn.execute(text("ALTER TABLE applications ADD COLUMN IF NOT EXISTS source VARCHAR(100);"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS base_resume TEXT;"))
+        conn.execute(text("ALTER TABLE applications ADD COLUMN IF NOT EXISTS job_description TEXT;"))
+        conn.execute(text("ALTER TABLE applications ADD COLUMN IF NOT EXISTS tailored_resume_url TEXT;"))
+        conn.execute(text("ALTER TABLE applications ADD COLUMN IF NOT EXISTS ats_match_details TEXT;"))
         conn.commit()
         
     ModelsBase.metadata.create_all(bind=engine)
