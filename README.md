@@ -19,6 +19,9 @@
 5. **Glassmorphism Analytics Dashboard**: Track conversion rates (Applied $\rightarrow$ Interview $\rightarrow$ Offer), response rates, and application velocities with visual Chart.js dashboards.
 6. **Follow-Up Assistant**: Automatically flags applications that have stagnated (no activity for 14+ days) and drafts contextual templates to follow up.
 7. **Google Sheets Sync**: Keeps your applications mirrored in real-time in a dedicated spreadsheet.
+8. **AI Resume Tailor & Optimizer**: Automatically rewrites your base resume HTML using Google Gemini to match target job descriptions (ATS keyword injection, mirror job titles, summary hooks) without fabricating facts. Serves tailored resumes as print-ready HTML pages.
+9. **Bulk LinkedIn Scraper**: Asynchronously triggers and polls an Apify crawler task to extract job listings from a LinkedIn jobs search URL, filters them for relevance (AI/workflows), and bulk-tailors customized resumes in background Celery tasks.
+
 
 ---
 
@@ -209,6 +212,12 @@ You can then access the app at `http://localhost:8000/index.html`.
 * `POST /api/v1/chat` - Interact with the hybrid RAG conversational AI assistant.
 * `GET /api/v1/gmail/followups` - List stalled application recommendations and drafted email contents.
 * `POST /api/v1/sheets/sync` - Mirror applications data manually to active Google Sheet spreads.
+* `POST /api/v1/resumes/tailor-single` - Instantly tailor a resume HTML for a single job description.
+* `POST /api/v1/resumes/tailor-bulk` - Launch background Celery scraper to bulk tailor resumes from a LinkedIn search URL.
+* `GET /api/v1/resumes/history` - Retrieve list of past resume tailoring runs.
+* `GET /api/v1/resumes/base` - Get user's base resume HTML template.
+* `PUT /api/v1/resumes/base` - Update user's base resume HTML template.
+
 
 ---
 

@@ -13,6 +13,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
+    base_resume = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -21,6 +22,7 @@ class User(Base):
     applications = relationship("Application", back_populates="user", cascade="all, delete-orphan")
     emails = relationship("Email", back_populates="user", cascade="all, delete-orphan")
     sheets_config = relationship("SheetsSyncConfig", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    resume_tailoring = relationship("ResumeTailoring", back_populates="user", cascade="all, delete-orphan")
 
 
 class OAuthToken(Base):

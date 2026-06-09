@@ -1,6 +1,6 @@
 from app.core.database import Base
 from app.models.user import User, OAuthToken
-from app.models.application import Application, ApplicationEvent, Interview, FollowUp, SheetsSyncConfig
+from app.models.application import Application, ApplicationEvent, Interview, FollowUp, SheetsSyncConfig, ResumeTailoring
 from app.models.email import Email
 
 __all__ = [
@@ -12,5 +12,6 @@ __all__ = [
     "Interview",
     "FollowUp",
     "SheetsSyncConfig",
+    "ResumeTailoring",
     "Email"
 ]

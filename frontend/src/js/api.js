@@ -139,3 +139,32 @@ const chatAPI = {
         return await apiRequest("/chat", "POST", { message });
     }
 };
+
+// Resume Tailoring API Requests
+const resumesAPI = {
+    async tailorSingle(jobTitle, companyName, jobDescription, jobUrl) {
+        return await apiRequest("/resumes/tailor-single", "POST", {
+            job_title: jobTitle,
+            company_name: companyName,
+            job_description: jobDescription,
+            job_url: jobUrl
+        });
+    },
+    async tailorBulk(searchUrl, count) {
+        return await apiRequest("/resumes/tailor-bulk", "POST", {
+            search_url: searchUrl,
+            count
+        });
+    },
+    async getHistory() {
+        return await apiRequest("/resumes/history");
+    },
+    async getBaseResume() {
+        return await apiRequest("/resumes/base");
+    },
+    async updateBaseResume(baseResume) {
+        return await apiRequest("/resumes/base", "PUT", {
+            base_resume: baseResume
+        });
+    }
+};

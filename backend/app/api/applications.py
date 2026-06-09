@@ -29,6 +29,7 @@ def list_applications(
             "salary_range": app.salary_range,
             "recruiter_name": app.recruiter_name,
             "source": app.source,
+            "tailored_resume_url": app.tailored_resume_url,
             "created_at": app.created_at.isoformat() if app.created_at else None,
             "updated_at": app.updated_at.isoformat() if app.updated_at else None
         })
@@ -156,6 +157,9 @@ def get_application_details(
         "location": app.location,
         "work_mode": app.work_mode,
         "notes": app.notes,
+        "tailored_resume_url": app.tailored_resume_url,
+        "job_description": app.job_description,
+        "ats_match_details": app.ats_match_details,
         "created_at": app.created_at.isoformat() if app.created_at else None,
         "timeline": [
             {

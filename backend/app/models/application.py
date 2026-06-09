@@ -32,6 +32,10 @@ class Application(Base):
     follow_ups = relationship("FollowUp", back_populates="application", cascade="all, delete-orphan")
     emails = relationship("Email", back_populates="application")
 
+    job_description = Column(Text, nullable=True)
+    tailored_resume_url = Column(Text, nullable=True)
+    ats_match_details = Column(Text, nullable=True)
+
 
 class ApplicationEvent(Base):
     __tablename__ = "application_events"
@@ -93,3 +97,20 @@ class SheetsSyncConfig(Base):
 
     # Relationships
     user = relationship("User", back_populates="sheets_config")
+
+
+class ResumeTailoring(Base):
+    __tablename__ = "resume_tailoring"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    job_url = Column(Text, nullable=True)
+    count = Column(Integer, default=1)
+    status = Column(String(50), default="PROCESSING")  # 'PROCESSING', 'COMPLETED', 'FAILED'
+    results_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="resume_tailoring")
+

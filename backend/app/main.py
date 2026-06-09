@@ -12,6 +12,8 @@ from app.api.applications import router as applications_router
 from app.api.gmail import router as gmail_router
 from app.api.chat import router as chat_router
 from app.api.sheets import router as sheets_router
+from app.api.resumes import router as resumes_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,13 +43,21 @@ app.include_router(applications_router, prefix=f"{settings.API_V1_STR}/applicati
 app.include_router(gmail_router, prefix=f"{settings.API_V1_STR}/gmail", tags=["gmail"])
 app.include_router(chat_router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
 app.include_router(sheets_router, prefix=f"{settings.API_V1_STR}/sync/sheets", tags=["sheets"])
+app.include_router(resumes_router, prefix=f"{settings.API_V1_STR}/resumes", tags=["resumes"])
+
 
 # Root and health-check endpoint
 @app.get("/health")
 def health_check():
     return {"status": "ok", "app": settings.PROJECT_NAME}
 
+# Mount static resumes directory
+resumes_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../static/resumes"))
+os.makedirs(resumes_dir, exist_ok=True)
+app.mount("/static/resumes", StaticFiles(directory=resumes_dir), name="resumes")
+
 # Mount static frontend files if directory exists
+
 container_frontend_path = "/frontend/src"
 local_frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/src"))
 frontend_path = container_frontend_path if os.path.exists(container_frontend_path) else local_frontend_path

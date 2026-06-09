@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadApplications();
     await loadFollowups();
     await loadSheetsConfig();
+    bindTailorForms();
 });
 
 // Tab Switcher Logic
@@ -35,12 +36,16 @@ function switchTab(tabName) {
     // Hide all panels
     document.getElementById("panel-analytics").classList.add("hidden");
     document.getElementById("panel-apps").classList.add("hidden");
+    document.getElementById("panel-tailor").classList.add("hidden");
+    document.getElementById("panel-sheets-tracker").classList.add("hidden");
     document.getElementById("panel-chat").classList.add("hidden");
     document.getElementById("panel-settings").classList.add("hidden");
 
     // Remove active styles on all sidebar buttons
     document.getElementById("nav-analytics").className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all";
     document.getElementById("nav-apps").className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all";
+    document.getElementById("nav-tailor").className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all";
+    document.getElementById("nav-sheets-tracker").className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all";
     document.getElementById("nav-chat").className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all";
     document.getElementById("nav-settings").className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all";
 
@@ -54,11 +59,20 @@ function switchTab(tabName) {
     const titles = {
         analytics: "Dashboard Overview",
         apps: "Job Applications Tracker",
+        tailor: "AI Resume Tailor & Optimizer",
+        "sheets-tracker": "Live Google Sheet Tracker",
         chat: "CareerOS AI Chat Assistant",
         settings: "Integrations & Settings"
     };
     document.getElementById("page-title").innerText = titles[tabName];
     activeTab = tabName;
+
+    // Trigger tab-specific loaders
+    if (tabName === "sheets-tracker") {
+        loadSheetsTrackerIframe();
+    } else if (tabName === "tailor") {
+        loadTailorData();
+    }
 }
 
 // Display Toast alerts
@@ -224,6 +238,7 @@ function renderApplicationsTable(list) {
         else if (app.status === "INTERVIEWING") statusBadgeClass = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
         else if (app.status === "OFFERED") statusBadgeClass = "bg-amber-500/10 text-amber-400 border border-amber-500/20";
         else if (app.status === "REJECTED") statusBadgeClass = "bg-rose-500/10 text-rose-400 border border-rose-500/20";
+        else if (app.status === "TAILORED") statusBadgeClass = "bg-sky-500/10 text-sky-400 border border-sky-500/20";
 
         const dateStr = app.created_at ? new Date(app.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) : 'N/A';
         tr.innerHTML = `
@@ -299,17 +314,93 @@ async function openAppDetails(appId) {
     try {
         const details = await appsAPI.get(appId);
         if (details) {
+            let statusBadgeClass = "bg-slate-900 text-slate-400";
+            if (details.status === "APPLIED") statusBadgeClass = "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
+            else if (details.status === "SCREENING") statusBadgeClass = "bg-purple-500/10 text-purple-400 border border-purple-500/20";
+            else if (details.status === "INTERVIEWING") statusBadgeClass = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+            else if (details.status === "OFFERED") statusBadgeClass = "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+            else if (details.status === "REJECTED") statusBadgeClass = "bg-rose-500/10 text-rose-400 border border-rose-500/20";
+            else if (details.status === "TAILORED") statusBadgeClass = "bg-sky-500/10 text-sky-400 border border-sky-500/20";
+
+            let atsHTML = "";
+            if (details.ats_match_details) {
+                try {
+                    const ats = typeof details.ats_match_details === 'string' ? JSON.parse(details.ats_match_details) : details.ats_match_details;
+                    const hasKws = ats.candidate_has || [];
+                    const needsKws = ats.candidate_needs_to_inject || [];
+                    
+                    atsHTML = `
+                        <!-- ATS Match Analysis -->
+                        <div class="space-y-3 bg-slate-900/40 border border-slate-850 p-4 rounded-2xl text-xs">
+                            <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-brand-500"></i>
+                                <span>ATS Optimization Insights</span>
+                            </h4>
+                            <div>
+                                <span class="text-slate-500 block uppercase font-semibold text-[9px] tracking-wider mb-1">Target Title Mirror</span>
+                                <span class="font-medium text-slate-200">${ats.ats_title_mirror || details.job_title}</span>
+                            </div>
+                            ${ats.summary_hook ? `
+                            <div>
+                                <span class="text-slate-500 block uppercase font-semibold text-[9px] tracking-wider mb-1">AI Summary Hook</span>
+                                <p class="text-slate-350 italic">"${ats.summary_hook}"</p>
+                            </div>
+                            ` : ""}
+                            <div class="space-y-2">
+                                <span class="text-slate-500 block uppercase font-semibold text-[9px] tracking-wider">Keywords Matching</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${hasKws.map(kw => `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px]">${kw}</span>`).join('')}
+                                    ${needsKws.map(kw => `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[10px]">${kw} (Injected)</span>`).join('')}
+                                </div>
+                            </div>
+                            ${ats.keyword_placement_priority ? `
+                            <div>
+                                <span class="text-slate-500 block uppercase font-semibold text-[9px] tracking-wider mb-1">Optimisation Strategy</span>
+                                <p class="text-slate-400 font-light">${ats.keyword_placement_priority}</p>
+                            </div>
+                            ` : ""}
+                        </div>
+                    `;
+                } catch (e) {
+                    console.error("Failed to parse ATS Match Details: ", e);
+                }
+            }
+
             container.innerHTML = `
                 <div class="space-y-4">
                     <div>
                         <h3 class="text-2xl font-bold text-white leading-tight">${details.company_name}</h3>
-                        <p class="text-slate-400 text-sm">${details.job_title}</p>
+                        <p class="text-slate-400 text-sm mb-2">${details.job_title}</p>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${statusBadgeClass}">
+                            ${details.status}
+                        </span>
                     </div>
+
+                    ${details.tailored_resume_url ? `
+                    <div class="pt-2">
+                        <a href="${details.tailored_resume_url}" target="_blank" class="w-full text-center bg-brand-600/15 hover:bg-brand-600 border border-brand-500/20 hover:border-brand-500 text-slate-200 hover:text-white font-bold py-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                            <span>View Tailored Resume</span>
+                        </a>
+                    </div>
+                    ` : ""}
+
+                    ${details.status === "TAILORED" ? `
+                    <div class="pt-1">
+                        <button onclick="markAsApplied('${details.id}')" class="w-full bg-emerald-650 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            <span>Mark as Applied & Sync Sheet</span>
+                        </button>
+                    </div>
+                    ` : ""}
+
+                    ${atsHTML}
                     
                     <div class="grid grid-cols-2 gap-4 bg-slate-900/50 p-4 border border-slate-850 rounded-2xl text-sm">
                         <div>
                             <span class="text-xs text-slate-500 block">Status</span>
                             <select id="update-status-select" onchange="updateAppStatus('${details.id}', this.value)" class="bg-slate-950 border border-slate-800 focus:border-brand-500 rounded px-2 py-1 text-xs text-slate-200 mt-1 focus:outline-none">
+                                <option value="TAILORED" ${details.status === "TAILORED" ? "selected" : ""}>TAILORED</option>
                                 <option value="APPLIED" ${details.status === "APPLIED" ? "selected" : ""}>APPLIED</option>
                                 <option value="SCREENING" ${details.status === "SCREENING" ? "selected" : ""}>SCREENING</option>
                                 <option value="INTERVIEWING" ${details.status === "INTERVIEWING" ? "selected" : ""}>INTERVIEWING</option>
@@ -350,13 +441,14 @@ async function openAppDetails(appId) {
                                     <div class="absolute -left-[29px] top-1.5 w-3.5 h-3.5 rounded-full border border-slate-950 bg-brand-500"></div>
                                     <span class="text-xs text-slate-500 block">${ev.event_date}</span>
                                     <span class="text-sm font-semibold text-slate-200">${ev.stage}</span>
-                                    <p class="text-xs text-slate-450 mt-0.5">${ev.notes || ""}</p>
+                                    <p class="text-xs text-slate-400 mt-0.5">${ev.notes || ""}</p>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
                 </div>
             `;
+            lucide.createIcons();
         }
     } catch (err) {
         container.innerHTML = `<p class="text-sm text-rose-400 text-center py-12">Failed to load: ${err.message}</p>`;
@@ -607,5 +699,208 @@ function removeChatLoadingPlaceholder(id) {
     const element = document.getElementById(id);
     if (element) {
         element.remove();
+    }
+}
+
+// ==========================================
+// RESUME TAILORING WORKFLOW & FUNCTIONS
+// ==========================================
+
+let activeTailorSubTab = "single";
+
+function switchTailorSubTab(mode) {
+    if (mode === "single") {
+        document.getElementById("single-tailor-form").classList.remove("hidden");
+        document.getElementById("bulk-tailor-form").classList.add("hidden");
+        document.getElementById("subnav-single").className = "px-4 py-2 border-b-2 border-brand-500 text-sm font-semibold text-white";
+        document.getElementById("subnav-bulk").className = "px-4 py-2 border-b-2 border-transparent text-sm font-medium text-slate-400 hover:text-white";
+    } else {
+        document.getElementById("single-tailor-form").classList.add("hidden");
+        document.getElementById("bulk-tailor-form").classList.remove("hidden");
+        document.getElementById("subnav-single").className = "px-4 py-2 border-b-2 border-transparent text-sm font-medium text-slate-400 hover:text-white";
+        document.getElementById("subnav-bulk").className = "px-4 py-2 border-b-2 border-brand-500 text-sm font-semibold text-white";
+    }
+    activeTailorSubTab = mode;
+}
+
+async function loadTailorData() {
+    try {
+        // Load history
+        const history = await resumesAPI.getHistory();
+        renderTailorHistory(history);
+
+        // Load base resume HTML
+        const res = await resumesAPI.getBaseResume();
+        if (res && res.base_resume) {
+            document.getElementById("base-resume-editor").value = res.base_resume;
+        }
+    } catch (err) {
+        console.error("Failed to load tailoring data: ", err);
+    }
+}
+
+function renderTailorHistory(list) {
+    const tbody = document.getElementById("tailor-history-tbody");
+    if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-6 text-slate-500 text-sm">No tailoring history found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    list.forEach(run => {
+        const tr = document.createElement("tr");
+        tr.className = "border-b border-slate-850 hover:bg-slate-900/40 transition-all";
+        
+        let statusBadgeClass = "bg-slate-900 text-slate-450";
+        if (run.status === "COMPLETED") statusBadgeClass = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        else if (run.status === "PROCESSING") statusBadgeClass = "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse";
+        else if (run.status === "FAILED") statusBadgeClass = "bg-rose-500/10 text-rose-400 border border-rose-500/20";
+
+        const dateStr = run.created_at ? new Date(run.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute:'2-digit'}) : 'N/A';
+        const displayUrl = run.job_url.length > 50 ? run.job_url.substring(0, 50) + "..." : run.job_url;
+
+        tr.innerHTML = `
+            <td class="p-4 pl-6 text-slate-200 text-sm font-medium">
+                ${run.job_url === "Single JD Optimization" 
+                    ? `<span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-500"></i> Single JD Optimisation</span>`
+                    : `<a href="${run.job_url}" target="_blank" class="text-brand-500 hover:text-brand-400 underline">${displayUrl}</a>`
+                }
+            </td>
+            <td class="p-4 text-slate-450 text-sm">${run.count}</td>
+            <td class="p-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusBadgeClass}">
+                    ${run.status}
+                </span>
+            </td>
+            <td class="p-4 text-slate-300 text-sm font-semibold">${run.results_count}</td>
+            <td class="p-4 pr-6 text-slate-450 text-xs">${dateStr}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    lucide.createIcons();
+}
+
+async function saveBaseResume() {
+    const editor = document.getElementById("base-resume-editor");
+    const saveBtn = document.getElementById("btn-save-base-resume");
+    
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Saving...";
+    
+    try {
+        await resumesAPI.updateBaseResume(editor.value);
+        showFeedback("Base HTML resume template saved successfully!", true);
+    } catch (err) {
+        showFeedback(`Failed to save base template: ${err.message}`, false);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerText = "Save Base Template";
+    }
+}
+
+function bindTailorForms() {
+    // Single Tailor Form
+    const singleForm = document.getElementById("single-tailor-form");
+    if (singleForm) {
+        singleForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("btn-tailor-single");
+            const title = document.getElementById("tailor-title").value.trim();
+            const company = document.getElementById("tailor-company").value.trim();
+            const url = document.getElementById("tailor-url").value.trim();
+            const desc = document.getElementById("tailor-description").value.trim();
+
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4 animate-spin mr-1"></i> Optimising resume details, please wait...`;
+            lucide.createIcons();
+
+            try {
+                const res = await resumesAPI.tailorSingle(title, company, desc, url || null);
+                showFeedback("Resume tailored successfully!", true);
+                
+                // Clear fields
+                document.getElementById("tailor-title").value = "";
+                document.getElementById("tailor-company").value = "";
+                document.getElementById("tailor-url").value = "";
+                document.getElementById("tailor-description").value = "";
+
+                // Open newly tailored details
+                await loadApplications();
+                await loadAnalytics();
+                await openAppDetails(res.application_id);
+            } catch (err) {
+                showFeedback(`Tailoring failed: ${err.message}`, false);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 mr-1"></i> Start Resume Optimisation`;
+                lucide.createIcons();
+                await loadTailorData();
+            }
+        });
+    }
+
+    // Bulk Tailor Form
+    const bulkForm = document.getElementById("bulk-tailor-form");
+    if (bulkForm) {
+        bulkForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("btn-tailor-bulk");
+            const searchUrl = document.getElementById("bulk-search-url").value.trim();
+            const count = parseInt(document.getElementById("bulk-count").value) || 1;
+
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4 animate-spin mr-1"></i> Launching scraping worker...`;
+            lucide.createIcons();
+
+            try {
+                await resumesAPI.tailorBulk(searchUrl, count);
+                showFeedback("Bulk scraping triggered. Processing in background...", true);
+                document.getElementById("bulk-search-url").value = "";
+            } catch (err) {
+                showFeedback(`Failed to launch scraper: ${err.message}`, false);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4 mr-1"></i> Launch Scrape & Bulk Tailor`;
+                lucide.createIcons();
+                await loadTailorData();
+            }
+        });
+    }
+}
+
+async function markAsApplied(appId) {
+    try {
+        await appsAPI.update(appId, { status: "APPLIED" });
+        showFeedback("Application status updated to APPLIED and synced to Google Sheets.", true);
+        closeAppDetails();
+        await loadApplications();
+        await loadAnalytics();
+    } catch (err) {
+        showFeedback(`Failed to mark as applied: ${err.message}`, false);
+    }
+}
+
+async function loadSheetsTrackerIframe() {
+    const container = document.getElementById("sheets-iframe-container");
+    container.innerHTML = `<p class="text-sm text-slate-450 text-center py-12">Loading Google Sheet...</p>`;
+    try {
+        const config = await sheetsAPI.getConfig();
+        if (config && config.spreadsheet_id) {
+            container.innerHTML = `
+                <iframe class="w-full h-full border-none opacity-95 hover:opacity-100 transition-opacity duration-300 rounded-xl" src="https://docs.google.com/spreadsheets/d/${config.spreadsheet_id}/preview?widget=true&headers=false"></iframe>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center p-12 text-center h-full space-y-4 bg-slate-900/20 border border-slate-850 rounded-2xl">
+                    <i data-lucide="file-spreadsheet" class="w-16 h-16 text-slate-600 animate-pulse"></i>
+                    <h3 class="text-lg font-bold text-white">Google Sheet Tracker not Configured</h3>
+                    <p class="text-sm text-slate-400 max-w-md">Please navigate to the Settings panel and enter your Spreadsheet ID to synchronize and view your spreadsheet directly inside this dashboard.</p>
+                    <button onclick="switchTab('settings')" class="bg-brand-600 hover:bg-brand-500 text-white font-semibold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-brand-500/10">Configure Settings</button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-rose-450 text-center py-12">Failed to check Sheets configuration: ${err.message}</p>`;
     }
 }

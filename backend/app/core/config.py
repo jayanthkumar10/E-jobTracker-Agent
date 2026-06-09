@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     
     # Gemini API Key
     GEMINI_API_KEY: str = ""
+    
+    # Apify API Token (for LinkedIn Scraper)
+    APIFY_API_TOKEN: str = ""
 
     model_config = ConfigDict(
         env_file=".env",

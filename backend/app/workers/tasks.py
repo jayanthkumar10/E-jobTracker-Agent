@@ -236,3 +236,143 @@ def detect_user_followups_task(user_id: str):
         db.close()
 
 
+@celery_app.task(bind=True, max_retries=1)
+def bulk_tailor_linkedin_jobs_task(self, user_id: str, search_url: str, count: int, run_id: str):
+    """
+    Background worker that calls Apify's LinkedIn Scraper task, polls for completion,
+    fetches dataset, relevance checks, and tailors resumes for matching applications.
+    """
+    import time
+    from app.core.config import settings
+    from app.models.application import ResumeTailoring
+    from app.services.resume_tailor import ResumeTailorService
+    
+    db = SessionLocal()
+    run = db.query(ResumeTailoring).filter(ResumeTailoring.id == run_id).first()
+    if not run:
+        db.close()
+        return f"Run {run_id} not found."
+
+    apify_token = settings.APIFY_API_TOKEN
+    if not apify_token:
+        run.status = "FAILED"
+        db.commit()
+        db.close()
+        return "APIFY_API_TOKEN is not configured."
+
+    try:
+        # 1. Trigger Apify Actor Run
+        run_url = f"https://api.apify.com/v2/actors/curious_coder~linkedin-jobs-scraper/runs?token={apify_token}"
+        payload = {
+            "count": count,
+            "scrapeCompany": True,
+            "splitByLocation": False,
+            "urls": [search_url]
+        }
+
+        logger.info(f"Triggering Apify scraper for user {user_id} with query {search_url} (count: {count})")
+        with httpx.Client(timeout=30.0) as client:
+            response = client.post(run_url, json=payload)
+            if response.status_code not in (200, 201):
+                logger.error(f"Apify run trigger failed: {response.text}")
+                run.status = "FAILED"
+                db.commit()
+                return f"Apify failed: {response.text}"
+                
+            run_data = response.json().get("data", {})
+            apify_run_id = run_data.get("id")
+            
+            # 2. Poll Apify run status until completed
+            status_url = f"https://api.apify.com/v2/actor-runs/{apify_run_id}?token={apify_token}"
+            max_attempts = 60 # 60 * 10 seconds = 10 minutes max
+            is_done = False
+            
+            for attempt in range(max_attempts):
+                time.sleep(10)
+                status_response = client.get(status_url)
+                if status_response.status_code != 200:
+                    logger.warning(f"Failed to check Apify run status: {status_response.text}")
+                    continue
+                    
+                status_data = status_response.json().get("data", {})
+                apify_status = status_data.get("status")
+                
+                if apify_status in ("SUCCEEDED", "COMPLETED"):
+                    is_done = True
+                    break
+                elif apify_status in ("FAILED", "ABORTED", "TIMED-OUT"):
+                    logger.error(f"Apify run finished with error state: {apify_status}")
+                    run.status = "FAILED"
+                    db.commit()
+                    return f"Apify run failed with status {apify_status}."
+            
+            if not is_done:
+                logger.error("Apify run polling timed out.")
+                run.status = "FAILED"
+                db.commit()
+                return "Apify polling timed out."
+                
+            # 3. Retrieve Scraped Job dataset items
+            dataset_url = f"https://api.apify.com/v2/actor-runs/{apify_run_id}/dataset/items?token={apify_token}"
+            dataset_response = client.get(dataset_url)
+            if dataset_response.status_code != 200:
+                logger.error(f"Failed to fetch dataset items: {dataset_response.text}")
+                run.status = "FAILED"
+                db.commit()
+                return f"Failed to fetch dataset: {dataset_response.text}"
+                
+            items = dataset_response.json()
+            if not isinstance(items, list):
+                items = [items]
+                
+            logger.info(f"Apify scraping finished. Retrieved {len(items)} jobs. Commencing relevance check and tailoring.")
+            
+            tailored_count = 0
+            for item in items:
+                title = item.get("title") or "Unknown Role"
+                company = item.get("companyName") or "Unknown Company"
+                description = item.get("descriptionText") or ""
+                job_url = item.get("link") or search_url
+                
+                if not description:
+                    continue
+                    
+                # Relevance Check
+                is_relevant = ResumeTailorService.relevance_check(description)
+                if not is_relevant:
+                    logger.info(f"Job '{title}' at '{company}' is not relevant. Skipping.")
+                    continue
+                    
+                # Tailor the application
+                try:
+                    ResumeTailorService.tailor_application(
+                        db=db,
+                        user_id=user_id,
+                        job_title=title,
+                        company_name=company,
+                        job_description=description,
+                        job_url=job_url
+                    )
+                    tailored_count += 1
+                except Exception as ex:
+                    logger.error(f"Failed to tailor job '{title}' at '{company}': {str(ex)}")
+                    continue
+                    
+            # 4. Finalize run record status
+            run.status = "COMPLETED"
+            run.results_count = tailored_count
+            db.commit()
+            
+            return f"Bulk tailoring complete. Tailored {tailored_count} resumes."
+            
+    except Exception as e:
+        logger.error(f"Error in bulk tailoring Celery task: {str(e)}")
+        if run:
+            run.status = "FAILED"
+            db.commit()
+        return f"Error: {str(e)}"
+    finally:
+        db.close()
+
+
+

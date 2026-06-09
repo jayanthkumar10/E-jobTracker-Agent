@@ -34,3 +34,7 @@ dist-frontend/
 # OS/System files
 .DS_Store
 Thumbs.db
+
+# Agent and generated resumes
+AGENT/
+backend/app/static/resumes/
