@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerOS - Dashboard</title>
+    <!-- Tailwind Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            950: '#030712',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Outfit', sans-serif;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-950/60 border-r border-slate-900 flex flex-col justify-between p-6 shrink-0 relative z-25">
+        <div class="space-y-8">
+            <!-- App Brand Logo -->
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-violet-500 shadow-md shadow-brand-500/10">
+                    <i data-lucide="briefcase" class="h-5.5 w-5.5 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold tracking-tight text-white leading-none">CareerOS</h2>
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Self-Hosted</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="space-y-1">
+                <button onclick="switchTab('analytics')" id="nav-analytics" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 bg-brand-600/10 text-white font-medium hover:bg-slate-900 transition-all">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchTab('apps')" id="nav-apps" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all">
+                    <i data-lucide="list-todo" class="w-5 h-5"></i>
+                    <span>Applications</span>
+                </button>
+                <button onclick="switchTab('chat')" id="nav-chat" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all">
+                    <i data-lucide="message-square" class="w-5 h-5"></i>
+                    <span>AI Assistant</span>
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-all">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Settings</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Logout Bottom -->
+        <div>
+            <button onclick="logout()" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/5 transition-all">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+                <span>Sign Out</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        <!-- Top Navigation Bar -->
+        <header class="h-16 border-b border-slate-900 px-8 flex items-center justify-between shrink-0 bg-slate-950/20 backdrop-blur-md">
+            <div>
+                <h1 id="page-title" class="text-xl font-bold text-white">Dashboard Overview</h1>
+                <p id="today-date-badge" class="text-[11px] text-slate-400 mt-0.5">Today: Saturday, Jun 6, 2026</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- Sync Trigger Button -->
+                <button onclick="triggerSync()" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white px-3.5 py-1.8 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon"></i>
+                    <span>Sync Gmail</span>
+                </button>
+                <!-- Linked Badge -->
+                <span id="gmail-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-900 text-slate-500 border border-slate-850">
+                    Checking Gmail OAuth...
+                </span>
+            </div>
+        </header>
+
+        <!-- Dynamic Panels Section -->
+        <div class="flex-1 overflow-y-auto p-8 scrollbar-hide">
+            
+            <!-- Global Feedback Notification Banner -->
+            <div id="feedback-banner" class="hidden mb-6 p-4 rounded-2xl border text-sm flex items-center justify-between">
+                <span id="feedback-message"></span>
+                <button onclick="this.parentElement.classList.add('hidden')"><i data-lucide="x" class="w-4 h-4 text-slate-400 hover:text-white"></i></button>
+            </div>
+
+            <!-- ANALYTICS PANEL -->
+            <section id="panel-analytics" class="space-y-8">
+                <!-- KPI Stats List Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                    <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-6 relative overflow-hidden">
+                        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Sent Applications</p>
+                        <h3 id="stat-total" class="text-3xl font-extrabold text-white">0</h3>
+                        <div class="absolute bottom-0 right-0 p-4 opacity-5"><i data-lucide="send" class="w-16 h-16 text-brand-500"></i></div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-6 relative overflow-hidden">
+                        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Response Rate</p>
+                        <h3 id="stat-response" class="text-3xl font-extrabold text-amber-400">0%</h3>
+                        <div class="absolute bottom-0 right-0 p-4 opacity-5"><i data-lucide="percent" class="w-16 h-16 text-amber-500"></i></div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-6 relative overflow-hidden">
+                        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Interviews Conducted</p>
+                        <h3 id="stat-interviews-done" class="text-3xl font-extrabold text-brand-400">0</h3>
+                        <div class="absolute bottom-0 right-0 p-4 opacity-5"><i data-lucide="video" class="w-16 h-16 text-brand-550"></i></div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-6 relative overflow-hidden">
+                        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Avg Days to Interview</p>
+                        <h3 id="stat-avg-days" class="text-3xl font-extrabold text-emerald-400">0</h3>
+                        <div class="absolute bottom-0 right-0 p-4 opacity-5"><i data-lucide="calendar" class="w-16 h-16 text-emerald-500"></i></div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-6 relative overflow-hidden">
+                        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Daily Applied Streak</p>
+                        <h3 id="stat-streak" class="text-3xl font-extrabold text-violet-400">0 days</h3>
+                        <div class="absolute bottom-0 right-0 p-4 opacity-5"><i data-lucide="flame" class="w-16 h-16 text-violet-500"></i></div>
+                    </div>
+                </div>
+
+                <!-- Journey Start & Counting Info Bar -->
+                <div class="bg-slate-900/20 border border-slate-850 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-brand-500/10">
+                            <i data-lucide="milestone" class="h-6 w-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Your Job Hunting Journey</h4>
+                            <p id="stat-journey-start" class="text-white font-bold text-lg mt-0.5">Journey Started: N/A</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-800 rounded-xl px-6 py-3 text-center md:text-right">
+                        <span class="text-xs text-slate-500 block uppercase tracking-widest font-semibold">Days Active</span>
+                        <h3 id="stat-journey-days" class="text-2xl font-extrabold text-brand-400 mt-0.5">0 days</h3>
+                    </div>
+                </div>
+
+                <!-- Funnel chart & Action Items Column Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Funnel Chart Card -->
+                    <div class="lg:col-span-2 bg-slate-900/30 border border-slate-850 rounded-2xl p-6">
+                        <h2 class="text-lg font-bold mb-6 flex items-center space-x-2 text-white">
+                            <i data-lucide="filter" class="w-5 h-5 text-brand-500"></i>
+                            <span>Application Conversion Funnel</span>
+                        </h2>
+                        <div class="h-64 flex items-center justify-center relative">
+                            <canvas id="funnelChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Follow-ups Alert list -->
+                    <div class="bg-slate-900/30 border border-slate-850 rounded-2xl p-6 flex flex-col justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold mb-4 flex items-center space-x-2 text-white">
+                                <i data-lucide="bell-ring" class="w-5 h-5 text-amber-500"></i>
+                                <span>Suggested Action Items</span>
+                            </h2>
+                            <div id="followups-container" class="space-y-4 max-h-72 overflow-y-auto scrollbar-hide">
+                                <p class="text-sm text-slate-500 text-center py-6">All caught up! No stagnant applications detected.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- APPLICATIONS LIST PANEL -->
+            <section id="panel-apps" class="hidden space-y-6">
+                <!-- Search & Filters -->
+                <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <div class="relative w-full sm:max-w-md">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-4 top-3.5"></i>
+                        <input type="text" id="search-apps" oninput="filterApplications()" class="w-full bg-slate-900/40 border border-slate-850 focus:border-brand-500 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-100 focus:outline-none placeholder-slate-655 transition-all" placeholder="Search by company, title, or status...">
+                    </div>
+                    <div class="relative w-full sm:max-w-xs">
+                        <select id="filter-status" onchange="filterApplications()" class="w-full bg-slate-900/40 border border-slate-850 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-slate-300 focus:outline-none transition-all cursor-pointer">
+                            <option value="ALL">All Statuses</option>
+                            <option value="APPLIED">APPLIED</option>
+                            <option value="SCREENING">SCREENING</option>
+                            <option value="INTERVIEWING">INTERVIEWING</option>
+                            <option value="OFFERED">OFFERED</option>
+                            <option value="REJECTED">REJECTED</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Applications Table -->
+                <div class="bg-slate-900/20 border border-slate-850 rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-850 text-xs font-semibold uppercase tracking-wider text-slate-500 bg-slate-950/20">
+                                    <th class="p-4 pl-6">Company</th>
+                                    <th class="p-4">Job Role</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Date</th>
+                                    <th class="p-4">Source</th>
+                                    <th class="p-4">Location</th>
+                                    <th class="p-4 pr-6 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="apps-tbody">
+                                <tr>
+                                    <td colspan="7" class="text-center p-8 text-slate-500 text-sm">No applications found. Connect Gmail to start tracking.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI CHAT PANEL -->
+            <section id="panel-chat" class="hidden flex flex-col h-[calc(100vh-12rem)] relative bg-slate-900/10 border border-slate-850 rounded-2xl overflow-hidden">
+                <!-- Chat Message Stream -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
+                    <div class="flex space-x-3 max-w-2xl">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-violet-500 flex items-center justify-center shrink-0">
+                            <i data-lucide="cpu" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <div class="bg-slate-900/80 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 border border-slate-850 leading-relaxed">
+                            Hello! I am CareerOS AI. I have indexed your synced job applications and email history. Feel free to ask me anything about your job search!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggestion Chips -->
+                <div class="px-6 py-3 border-t border-slate-900/60 bg-slate-950/20 flex flex-wrap gap-2 shrink-0">
+                    <button onclick="sendQuickQuery('How many applications have I sent?')" class="text-xs bg-slate-900 border border-slate-850 text-slate-400 hover:text-white hover:border-brand-500/50 rounded-full px-3 py-1.5 transition-all">How many applications?</button>
+                    <button onclick="sendQuickQuery('Which companies rejected me?')" class="text-xs bg-slate-900 border border-slate-850 text-slate-400 hover:text-white hover:border-brand-500/50 rounded-full px-3 py-1.5 transition-all">Who rejected me?</button>
+                    <button onclick="sendQuickQuery('Do I have any interviews scheduled next week?')" class="text-xs bg-slate-900 border border-slate-850 text-slate-400 hover:text-white hover:border-brand-500/50 rounded-full px-3 py-1.5 transition-all">Interviews scheduled?</button>
+                    <button onclick="sendQuickQuery('Which applications have had no response for 30 days?')" class="text-xs bg-slate-900 border border-slate-850 text-slate-400 hover:text-white hover:border-brand-500/50 rounded-full px-3 py-1.5 transition-all">Inactive 30 days?</button>
+                </div>
+
+                <!-- Chat Input area -->
+                <form id="chat-form" class="p-4 border-t border-slate-905 bg-slate-950/40 flex items-center space-x-3 shrink-0">
+                    <input type="text" id="chat-input" required class="flex-1 bg-slate-900 border border-slate-850 focus:border-brand-500 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none placeholder-slate-500 transition-all" placeholder="Ask CareerOS AI (e.g. 'Why did Stripe reject me?')...">
+                    <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl transition-all shadow-md shadow-brand-500/10">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </section>
+
+            <!-- SETTINGS PANEL -->
+            <section id="panel-settings" class="hidden space-y-8 max-w-2xl">
+                <!-- Connect Gmail settings -->
+                <div class="bg-slate-900/30 border border-slate-850 rounded-2xl p-6 space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                        <i data-lucide="mail" class="w-5 h-5 text-brand-500"></i>
+                        <span>Google Account Integration</span>
+                    </h3>
+                    <p class="text-sm text-slate-400">
+                        CareerOS scans your Gmail inbox for career-related emails, interview invites, and status updates using read-only API access.
+                    </p>
+                    <div class="pt-2">
+                        <button id="btn-link-google" onclick="connectGoogleOAuth()" class="bg-white hover:bg-slate-100 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm flex items-center space-x-2 transition-all shadow-lg shadow-white/5">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                            <span>Link Google Account</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Google Sheets Settings -->
+                <div class="bg-slate-900/30 border border-slate-850 rounded-2xl p-6 space-y-5">
+                    <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                        <i data-lucide="file-spreadsheet" class="w-5 h-5 text-emerald-500"></i>
+                        <span>Google Sheets Synchronization</span>
+                    </h3>
+                    <p class="text-sm text-slate-400">
+                        Automatically mirror your database entries inside a dedicated Google Sheet.
+                    </p>
+                    <form id="sheets-config-form" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Spreadsheet ID</label>
+                            <input type="text" id="sheet-id-input" class="w-full bg-slate-950/50 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none transition-all" placeholder="E.g., 1Z7R_abc123xyz...">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Sheet/Tab Name</label>
+                            <input type="text" id="sheet-name-input" class="w-full bg-slate-950/50 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none transition-all" value="Applications">
+                        </div>
+                        <div class="flex items-center space-x-3 pt-2">
+                            <input type="checkbox" id="sheet-enable-input" class="w-4 h-4 text-brand-600 bg-slate-950 border-slate-800 rounded focus:ring-brand-500">
+                            <label class="text-sm text-slate-300 font-medium">Enable Automatic Syncing</label>
+                        </div>
+                        <div class="pt-2 flex items-center space-x-3">
+                            <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-md shadow-brand-500/10">
+                                Save Config
+                            </button>
+                            <button type="button" onclick="triggerSheetsSync()" id="btn-sync-sheets-now" class="bg-slate-900 hover:bg-slate-800 border border-slate-850 text-slate-300 px-4 py-2 rounded-xl text-sm transition-all">
+                                Force Sync Now
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Detailed Application View Modal Sidebar -->
+    <div id="modal-app-details" class="fixed inset-y-0 right-0 w-full max-w-lg bg-slate-950 border-l border-slate-900 shadow-2xl p-8 transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto scrollbar-hide z-50">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+                <i data-lucide="info" class="w-5 h-5 text-brand-500"></i>
+                <span>Application details</span>
+            </h2>
+            <button onclick="closeAppDetails()" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-900 border border-slate-850 transition-all">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div id="modal-content" class="space-y-6">
+            <!-- Loaded dynamically -->
+        </div>
+    </div>
+
+    <!-- Script references -->
+    <script src="/js/api.js?v=1.0.1"></script>
+    <script src="/js/app.js?v=1.0.1"></script>
+</body>
+</html>

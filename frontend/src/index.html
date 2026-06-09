@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerOS - AI Job Application CRM</title>
+    <!-- Tailwind Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            950: '#030712',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex items-center justify-center p-4">
+
+    <!-- Auth Container -->
+    <div class="w-full max-w-md bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+        
+        <!-- Logo Header -->
+        <div class="text-center mb-8 relative z-10">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-violet-500 mb-4 shadow-lg shadow-brand-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2">CareerOS</h1>
+            <p class="text-slate-400 text-sm">Self-Hosted AI Job Application CRM</p>
+        </div>
+
+        <!-- Alert Notification -->
+        <div id="alert-box" class="hidden mb-6 p-4 rounded-xl text-sm border relative z-10"></div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="space-y-5 relative z-10">
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Address</label>
+                <input type="email" id="login-email" required class="w-full bg-slate-950/50 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none transition-all" placeholder="name@domain.com">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
+                <input type="password" id="login-password" required class="w-full bg-slate-950/50 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none transition-all" placeholder="••••••••">
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-brand-600/20 hover:shadow-brand-600/30 transition-all transform active:scale-[0.98]">
+                Sign In
+            </button>
+            <p class="text-center text-sm text-slate-400 mt-6">
+                Don't have an account? 
+                <button type="button" onclick="toggleAuthMode(false)" class="text-brand-500 hover:text-brand-400 font-medium underline transition-all">Sign up</button>
+            </p>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="hidden space-y-5 relative z-10">
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Full Name</label>
+                <input type="text" id="register-name" required class="w-full bg-slate-950/50 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none transition-all" placeholder="Alex Morgan">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Address</label>
+                <input type="email" id="register-email" required class="w-full bg-slate-950/50 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none transition-all" placeholder="name@domain.com">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
+                <input type="password" id="register-password" required class="w-full bg-slate-950/50 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none transition-all" placeholder="••••••••">
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-brand-600/20 hover:shadow-brand-600/30 transition-all transform active:scale-[0.98]">
+                Create Account
+            </button>
+            <p class="text-center text-sm text-slate-400 mt-6">
+                Already have an account? 
+                <button type="button" onclick="toggleAuthMode(true)" class="text-brand-500 hover:text-brand-400 font-medium underline transition-all">Sign in</button>
+            </p>
+        </form>
+
+    </div>
+
+    <!-- API Client & Logic scripts -->
+    <script src="/js/api.js"></script>
+    <script>
+        // Check if user is already authenticated
+        if (localStorage.getItem("careeros_token")) {
+            window.location.href = "/dashboard.html";
+        }
+
+        const alertBox = document.getElementById("alert-box");
+        const loginForm = document.getElementById("login-form");
+        const registerForm = document.getElementById("register-form");
+
+        function showAlert(message, isSuccess = false) {
+            alertBox.innerText = message;
+            alertBox.className = isSuccess 
+                ? "mb-6 p-4 rounded-xl text-sm border bg-emerald-500/10 border-emerald-500/20 text-emerald-400 block" 
+                : "mb-6 p-4 rounded-xl text-sm border bg-rose-500/10 border-rose-500/20 text-rose-400 block";
+        }
+
+        function toggleAuthMode(showLogin) {
+            alertBox.classList.add("hidden");
+            if (showLogin) {
+                loginForm.classList.remove("hidden");
+                registerForm.classList.add("hidden");
+            } else {
+                loginForm.classList.add("hidden");
+                registerForm.classList.remove("hidden");
+            }
+        }
+
+        // Handle Login Submission
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("login-email").value.trim();
+            const password = document.getElementById("login-password").value;
+            
+            try {
+                const success = await authAPI.login(email, password);
+                if (success) {
+                    window.location.href = "/dashboard.html";
+                } else {
+                    showAlert("Invalid email or password.");
+                }
+            } catch (err) {
+                showAlert(err.message || "Failed to log in.");
+            }
+        });
+
+        // Handle Registration Submission
+        registerForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("register-name").value.trim();
+            const email = document.getElementById("register-email").value.trim();
+            const password = document.getElementById("register-password").value;
+            
+            try {
+                await authAPI.register(email, password, name);
+                showAlert("Account created successfully! Please sign in.", true);
+                toggleAuthMode(true);
+            } catch (err) {
+                showAlert(err.message || "Failed to create account.");
+            }
+        });
+    </script>
+</body>
+</html>

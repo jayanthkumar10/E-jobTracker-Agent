@@ -1,0 +1,36 @@
+# Credentials and Local Configurations
+.env
+docker/.env
+*.env
+
+# Python caching & build files
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Database & Celery files
+celerybeat-schedule
+*.db
+*.sqlite3
+
+# Frontend/Node dependencies
+node_modules/
+.npm
+dist-frontend/
+
+# OS/System files
+.DS_Store
+Thumbs.db
